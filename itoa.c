@@ -76,5 +76,5 @@ int main(void)
 	nb = 0;
 	str = ft_itoa(nb);
 //	printf("%s\n", str);
-	printf("%.i\n", 0);
+	printf("%6.7zzt\n", 0);
 }

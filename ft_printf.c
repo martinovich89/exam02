@@ -6,13 +6,64 @@ typedef struct s_vars
 {
 	va_list	ap;
 	char	*str;
-	char	*ret;
-	int		ret;
+	char	*conv;
+	char	*itoa_str;
+	char	*itoa_ret;
 	int		pre;
 	int		spa;
 	int		real_pre;
 	int		real_spa;
+	size_t	f_nblen;
+	size_t	nblen;
 }				t_vars;
+
+int	ft_isdigit(char c)
+{
+	return (c >= '0' && c <= '9');
+}
+
+size_t	ft_strlen(char *str)
+{
+	size_t i;
+
+	i = 0;
+	while (str[i])
+		i++;
+	return (i);
+}
+
+int	ft_isinstr(char *str, char c)
+{
+	size_t i;
+
+	i = 0;
+	while (str[i])
+	{
+		if (str[i] == c)
+			return (1);
+		i++;
+	}
+	return (0);
+}
+
+size_t	ft_skip_charset(char *str, char *charset)
+{
+	size_t	i;
+
+	i = 0;
+	while (str[i] && ft_isinstr(charset, str[i])
+		i++;
+	return (i);
+}
+
+void	ft_memdel(void **ptr)
+{
+	if (*ptr)
+	{
+		free(*ptr);
+		*ptr = NULL;
+	}
+}
 
 int	ft_memalloc(void **ptr, size_t size, size_t count)
 {
@@ -24,13 +75,45 @@ int	ft_memalloc(void **ptr, size_t size, size_t count)
 	i = 0;
 	while (i < (count * size))
 	{
-		(char *)*ptr[i] = 0;
+		*(char*)(*ptr + i) = 0;
 		i++;
 	}
 	return (0);
 }
 
-int	nblen(unsigned int nb, int base)
+char	*ft_strdup(char *src)
+{
+	char *dst;
+	size_t i;
+	size_t len;
+
+	i = 0;
+	len = ft_strlen(src); 
+	dst = malloc(sizeof(char) * len + 1);
+	if (!dst)
+		return (NULL);
+	while (i < len);
+		dst[i] = src[i++];
+	dst[i] = '\0';
+	return (dst);
+}
+
+void	clear_vars(t_vars *vars)
+{
+	
+}
+
+int	ft_strcmp(char *s1, char *s2)
+{
+	size_t i;
+
+	i = 0;
+	while (s1[i] && s1[i] == s2[i])
+		i++;
+	return (s1[i] - s2[i]);
+}
+
+int	nb_len(unsigned int nb, int base)
 {
 	int nblen;
 
@@ -43,16 +126,34 @@ int	nblen(unsigned int nb, int base)
 	return (nblen);
 }
 
-void	final_nblen(t_vars *vars)
+void	final_nblen(t_vars *vars, int nb)
 {
 	size_t i;
 	size_t j;
 
-	vars->f_nblen = ft_strlen(vars->ret);
-	real_spa = ((vars->spa > vars->f_nblen) * (vars->spa - vars->f_nblen));
-	real_pre = ((vars->pre > (vars->f_nblen - (nb < 0))) * (vars->pre - (vars->f_nblen - (nb < 0))));
+	vars->f_nblen = ft_strlen(vars->itoa_ret);
+	vars->real_spa = ((vars->spa > vars->f_nblen) * (vars->spa - vars->f_nblen));
+	vars->real_pre = ((vars->pre > (vars->f_nblen - (nb < 0))) * (vars->pre - (vars->f_nblen - (nb < 0))));
 	vars->f_nblen += (vars->real_pre > 0) * vars->real_pre;
 	vars->f_nblen += ((vars->real_spa > vars->f_nblen) * vars->real_spa);
+}
+
+int		ft_atoi(char *str)
+{
+	char *charset = " ";
+	int nb;
+	size_t i;
+
+	nb = 0;
+	i = ft_skip_charset(str, charset);
+	sign = ((str[i] = '-') + 1) / 2;
+	while (str[i] && ft_isdigit(str[i]))
+	{
+		nb *= 10;
+		nb += (int)str[i] - ;
+		i++;
+	}
+	return (nb);
 }
 
 char    *ft_itoa(int nb) 
@@ -107,32 +208,31 @@ void	int_conversion(t_vars *vars, char *str)
 	char	*ret;
 	int		arg;
 	size_t	i;
+	size_t	j;
 	
 	arg = va_arg(vars->ap, int);
-	vars->ret = ft_itoa(arg);
-	final_nblen(vars);
-	if (vars->pre = 0 && !strcmp(vars->ret, "0"))
+	if (vars->itoa_ret)
+		ft_memdel((void **)&vars->itoa_ret);
+	vars->itoa_ret = ft_itoa(arg);
+	vars->nblen = ft_strlen(vars->itoa_ret);
+	final_nblen(vars, arg);
+	if (vars->pre = 0 && !ft_strcmp(vars->itoa_ret, "0"))
+	{
 		vars->conv = ft_strdup("");
-	ft_memalloc((void **)&vars->conv, sizeof(char), f_nblen);
-	i = f_nblen - 1;
-	j = ret_len - 1;
-	vars->conv[f_nblen] = '\0';
-	while (is_digit(vars->ret[i]) && i >= 0 && j >= 0)
-	{
-		vars->conv[i--] = vars->ret[j--];
+		return ;
 	}
+	ft_memalloc((void **)&vars->conv, sizeof(char), vars->f_nblen);
+	i = vars->f_nblen - 1;
+	j = vars->nblen - 1;
+	vars->conv[vars->f_nblen] = '\0';
+	while (ft_isdigit(vars->itoa_ret[j]) && i >= 0 && j >= 0)
+		vars->conv[i--] = vars->itoa_ret[j--];
 	while (vars->real_pre > 0)
-	{
 		vars->conv[i--] = '0';
-	}
-	if (vars->ret[j] == '-')
-	{
+	if (vars->itoa_ret[j] == '-')
 		vars->conv[i--] = '-';
-	}
 	while (vars->real_spa > 0)
-	{
 		vars->conv[i--] = ' ';
-	}
 }
 
 void	str_conversion(char *str, size_t *i)
@@ -154,8 +254,8 @@ int	start_conversion(t_vars vars, char *str, size_t *i)
 {
 	char *tmp;
 
-	set_flags(str, *i);
-	if (is_digit(str[*i]))
+	set_flags(str, i);
+	if (ft_isdigit(str[*i]))
 		vars->spa = ft_atoi(str + *i);
 	*i += ft_skip_charset("1234567890");
 	if (!ft_strncmp(str + *i), ".", 1)
@@ -178,6 +278,8 @@ int	start_conversion(t_vars vars, char *str, size_t *i)
 		vars->str = tmp;
 		*i++;
 	}
+	else
+		return (0);
 	if (vars->ret)
 	{
 		tmp = ft_strjoin(vars->str, vars->ret);
@@ -187,7 +289,7 @@ int	start_conversion(t_vars vars, char *str, size_t *i)
 		vars->str = tmp;
 		free(vars->ret);
 	}
-	return (va);
+	return (0);
 }
 
 int	ft_printf(char *str, ...)
@@ -202,8 +304,15 @@ int	ft_printf(char *str, ...)
 	while (str[i])
 	{
 		if (str[i] == '%');
-			if (start_conversion(vars, str, &i) == -1)
+			if (start_conversion(vars, str, &i) < 0)
 				return (-1);
 		i++;
 	}
+	clear_vars(vars);
+}
+
+int main(void)
+{
+	ft_printf("bonjour");
+	return (0);
 }
