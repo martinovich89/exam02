@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <limits.h>
 
 typedef struct s_vars
 {
@@ -131,6 +132,16 @@ int	ft_strcmp(char *s1, char *s2)
 	return (s1[i] - s2[i]);
 }
 
+int ft_ischarset(char c, char *charset)
+{
+	size_t i;
+	
+	i = 0;
+	while (charset[i] && charset[i] != c)
+		i++;
+	return (charset[i] == c);
+}
+
 int	nb_len(unsigned int nb, int base)
 {
 	int nblen;
@@ -189,7 +200,6 @@ char    *ft_itoa(int nb)
     sign = (nb >= 0) * 2 - 1;
     nb *= sign;
     nblen += nb_len(nb, 10);
-	printf("%i\n", nblen);
     str = malloc(sizeof(char) * (nblen + 1));
     str[nblen] = '\0';
     while (nb)
@@ -208,6 +218,8 @@ char    *xtoa(unsigned int nb)
     int nblen;
     unsigned int mod;
 
+	if (nb == 0)
+        return (ft_strdup("0"));
     nblen = nb_len(nb, 16);
     str = malloc(sizeof(char) * (nblen + 1));
     str[nblen] = '\0';
@@ -223,7 +235,7 @@ char    *xtoa(unsigned int nb)
     return (str);
 }
 
-void	int_conversion(t_vars *vars, char *str)
+void	int_conversion(t_vars *vars, char *str, char *charset)
 {
 	char	*ret;
 	int		arg;
@@ -242,24 +254,26 @@ void	int_conversion(t_vars *vars, char *str)
 		vars->conv = ft_strdup("");
 		return ;
 	}
+	printf("%zu\n", vars->f_nblen);
 	ft_memalloc((void **)&vars->conv, sizeof(char), vars->f_nblen + 1);
 	i = vars->f_nblen - 1;
 	j = vars->nblen - 1;
-//	printf("%zu | %zu\n", vars->f_nblen, vars->nblen);
 	vars->conv[vars->f_nblen] = '\0';
 	printf("itoa_ret = %s\n", vars->itoa_ret);
-	printf("%c\n", vars->itoa_ret[0]);
-	printf("%c\n", vars->itoa_ret[1]);
 	fflush(stdout);
-	while (j >= 0 && ft_isdigit(vars->itoa_ret[j]))
+	while (j >= 0 && ft_ischarset(vars->itoa_ret[j], charset))
 	{
-//		printf("%i | %i | %s\n", i, j, vars->itoa_ret);
-//		fflush(stdout);
-		//printf("%c| %c\n", vars->conv[i], vars->itoa_ret[j]);
-		//vars->conv[i] = vars->itoa_ret[j];
+		vars->conv[i] = vars->itoa_ret[j];
+		printf("i = %i, j = %i, conv[i] = %c, itoa_ret[j] = %c\n", i, j, vars->conv[i], vars->itoa_ret[j]);
+		fflush(stdout);
 		i--;
 		j--;
 	}
+	if (vars->itoa_ret[0] == '-')
+	{
+		vars->conv[i] = '-';
+	}
+	printf("%s\n", vars->conv);
 	while (vars->real_pre > 0)
 	{
 		vars->conv[i--] = '0';
@@ -279,14 +293,59 @@ void	str_conversion(char *str, size_t *i)
 
 }
 
-void	hex_conversion(char *str, size_t *i)
+void	hex_conversion(t_vars *vars, char *str, char *charset)
 {
-
+	char	*ret;
+	int		arg;
+	int	i;
+	int	j;
+	arg = va_arg(vars->ap, int);
+	if (vars->itoa_ret)
+		ft_memdel((void **)&vars->itoa_ret);
+	vars->itoa_ret = xtoa(arg);
+	vars->nblen = ft_strlen(vars->itoa_ret);
+	final_nblen(vars, arg);
+	if (vars->pre = 0 && !ft_strcmp(vars->itoa_ret, "0"))
+	{
+		vars->conv = ft_strdup("");
+		return ;
+	}
+	printf("%zu\n", vars->f_nblen);
+	ft_memalloc((void **)&vars->conv, sizeof(char), vars->f_nblen + 1);
+	i = vars->f_nblen - 1;
+	j = vars->nblen - 1;
+	vars->conv[vars->f_nblen] = '\0';
+	printf("itoa_ret = %s\n", vars->itoa_ret);
+	fflush(stdout);
+	while (j >= 0 && ft_ischarset(vars->itoa_ret[j], "0123456789abcdef"))       // ft_ischarset() !!!!
+	{
+		vars->conv[i] = vars->itoa_ret[j];
+		printf("i = %i, j = %i, conv[i] = %c, itoa_ret[j] = %c\n", i, j, vars->conv[i], vars->itoa_ret[j]);
+		fflush(stdout);
+		i--;
+		j--;
+	}
+	if (vars->itoa_ret[0] == '-')
+	{
+		vars->conv[i] = '-';
+	}
+	printf("%s\n", vars->conv);
+	while (vars->real_pre > 0)
+	{
+		vars->conv[i--] = '0';
+	}
+	if (vars->itoa_ret[0] == '-')
+	{
+		vars->conv[i--] = '-';
+	}
+	while (vars->real_spa > 0)
+	{
+		vars->conv[i--] = ' ';
+	}
 }
 
-void	set_flags(char *str, size_t *i)
+void	set_flags(t_vars *vars, char *str, size_t *i)
 {
-	
 }
 
 int	ft_strncmp(char *str, char *charset, size_t nb)
@@ -334,7 +393,7 @@ int	start_conversion(t_vars *vars, char *str, size_t *i)
 {
 	char *tmp;
 
-	set_flags(str, i);
+//	set_flags(str, i);
 	if (ft_isdigit(str[*i]))
 		vars->spa = ft_atoi(str + *i);
 	*i += ft_skip_charset(str, "1234567890");
@@ -344,15 +403,19 @@ int	start_conversion(t_vars *vars, char *str, size_t *i)
 		vars->pre = ft_atoi(str + *i);
 	}
 	*i += ft_skip_charset(str, "0123456789");
+	printf("%c\n", str[*i]);
 	if (str[*i] == 'd')
-		int_conversion(vars, str);
+	{
+		int_conversion(vars, str, "0123456789");
+	}
 	else if (str[*i] == 's')
 		str_conversion(str, i);
 	else if (str[*i] == 'x')
-		hex_conversion(str, i);
+	{
+		hex_conversion(vars, str, "0123456789abcdef");
+	}
 	else if (str[*i] == '%')
 	{
-		write(1, "kek\n", 4);
 		tmp = ft_strjoin(vars->str, "%");
 		if (!tmp)
 			return (-1);
@@ -363,16 +426,15 @@ int	start_conversion(t_vars *vars, char *str, size_t *i)
 	else
 		return (0);
 	(*i)++;
-	if (vars->itoa_ret)
+/*	if (vars->itoa_ret)
 	{
-		write(1, "kek\n", 4);
 		tmp = ft_strjoin(vars->str, vars->itoa_ret);
 		if (!tmp)
 			return (-1);
 		ft_memdel((void **)&vars->str);
 		vars->str = tmp;
 		ft_memdel((void **)&vars->itoa_ret);
-	}
+	}*/
 	return (0);
 }
 
@@ -398,6 +460,7 @@ int	ft_printf(char *str, ...)
 			if (start_conversion(vars, str, &i) < 0)
 				return (-1);
 			tmp = vars->str;
+			printf("%s | %s\n", vars->str, vars->conv);
 			vars->str = ft_strjoin(vars->str, vars->conv);
 			ft_memdel((void **)&tmp);
 			ft_memdel((void **)&vars->conv);
@@ -418,6 +481,7 @@ int	ft_printf(char *str, ...)
 
 int main(void)
 {
-	ft_printf("bonjour %d", -12);
+	ft_printf("bonjour %4x\n", 42);
+	printf("bonjour %4x\n", 42);
 	return (0);
 }
