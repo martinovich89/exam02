@@ -32,7 +32,7 @@ int	ft_strlen(char *str)
 	return (i);
 }
 
-int ft_memdel(void **ptr)
+void	ft_memdel(void **ptr)
 {
 	if (*ptr)
 	{
@@ -61,9 +61,18 @@ int	ft_error(t_vars *vars, int ret)
 
 int	ft_memalloc(void **ptr, size_t size, size_t count)
 {
+	size_t i;
+
 	*ptr = malloc(size * count);
 	if (!ptr)
 		return (-1);
+	i = 0;
+	while (i < size * count)
+	{
+		*(char *)(*ptr + i) = 0;
+		i++;
+	}
+	return (0);
 }
 
 char	*ft_strndup(char *src, size_t len)
@@ -132,7 +141,7 @@ char	*ft_itoa(int nb)
 		return (ft_strndup("0", 1));
 	if (nb == INT_MIN)
 		return (ft_strndup("-2147483648", 11));
-	sign = (nb < 0) * 2 - 1;
+	sign = (nb >= 0) * 2 - 1;
 	len = (nb < 0);
 	nb *= sign;
 	len += ft_nblen(nb, 10);
@@ -144,6 +153,7 @@ char	*ft_itoa(int nb)
 	{
 		str[i] = nb % 10 + '0';
 		nb /= 10;
+		i--;
 	}
 	if (sign < 0)
 		str[0] = '-';
@@ -165,11 +175,12 @@ char	*ft_xtoa(size_t nb)
 	str[i--] = '\0';
 	while (nb > 0)
 	{
-		if (nb % 16 > 9)
+		if (nb % 16 < 10)
 			str[i] = nb % 16 + '0';
 		else
 			str[i] = nb % 16 % 10 + 'a';
 		nb /= 16;
+		i--;
 	}
 	return (str);
 }
@@ -213,11 +224,19 @@ int	start_conversion(t_vars *vars, char *str, size_t *i)
 
 	(*i)++;
 	if (str[*i] == 'd')
+	{
 		if (int_conversion(vars, str + *i) < 0)
+		{
 			ft_error(vars, -1);
+		}
+	}
 	else if (str[*i] == 'x')
+	{
 		if (hex_conversion(vars, str + *i))
+		{
 			ft_error(vars, -1);
+		}
+	}
 	else if (str[*i] == 's')
 		if (str_conversion(vars, str + *i))
 			ft_error(vars, -1);
@@ -227,13 +246,24 @@ int	start_conversion(t_vars *vars, char *str, size_t *i)
 		if (!vars->conv)
 			return (ft_error(vars, -1));
 	}
-	if (vars->conv)
+/*	if (vars->conv)
 	{
 		tmp = ft_strjoin(vars->str, vars->conv);
 		ft_memdel((void **)&vars->str);
-		ft_memdel((void **)&vars->conv);
+		vars->str = tmp;
+	}*/
+	return (0);
+}
+
+int	join_and_free(char **dst, char **src1, char **src2)
+{
+	*dst = ft_strjoin(*src1, *src2);
+	if (!*dst)
+	{
+		return (-1);
 	}
-	(*i)++;
+	ft_memdel((void **)src1);
+	*src1 = *dst;
 	return (0);
 }
 
@@ -259,12 +289,9 @@ int	ft_printf(char *str, ...)
 	{
 		if (str[i] == '%')
 		{
-			start_conversion(vars, str + i, &i);
+			start_conversion(vars, str, &i);
 			if (!vars->conv)
 				return (ft_error(vars, -1));
-		}
-		if (vars->conv)
-		{
 			tmp = ft_strjoin(vars->str, vars->conv);
 			if (!tmp)
 			{
@@ -272,13 +299,11 @@ int	ft_printf(char *str, ...)
 			}
 			ft_memdel((void **)&vars->str);
 			vars->str = tmp;
-			tmp = NULL;
 			ft_memdel((void **)&vars->conv);
 		}
 		else
 		{
 			buf[0] = str[i];
-			printf("vars->str = %s\n", vars->str);
 			tmp = ft_strjoin(vars->str, buf);
 			if (!tmp)
 			{
@@ -291,6 +316,7 @@ int	ft_printf(char *str, ...)
 		}
 		i++;
 	}
+	write(1, vars->str, ft_strlen(vars->str));
 	ft_clear_vars(vars);
 	va_end(vars->ap);
 	return (0);
@@ -298,6 +324,6 @@ int	ft_printf(char *str, ...)
 
 int main(void)
 {
-	ft_printf("bonjour %d\n", 42);
-	printf("bonjour %d\n", 42);
+	ft_printf("bonjour %d, salut %d, au revoir %x\n", 42, 42, -42);
+	printf("bonjour %d, salut %d, au revoir %x\n", 42, 42, -42);
 }
