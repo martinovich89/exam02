@@ -5,37 +5,44 @@
 #include <fcntl.h>
 
 
+void	recurse(char **line, size_t depth, int fd)
+{
+	char	buf[1];
 
-
-/*
-	on va faire du recurse.
-	Il faut une condition d'arret.
-	Ce sera qu'on rencontre '\n' ou 'EOF'.
-	donc :
-	-----------------
-	recurse(depth)
+	buf[0] = '\0';
+	read(fd, buf, 1);
+	if (buf[0] != '\n' && buf[0] != '\0')
 	{
-		buf[0] == '\0';
-		read(0, buf, 1);
-		if (buf[0] != '\n' && buf[0] != '\0')
-			recurse(depth + 1);
-		else 
-			line = malloc(depth + 1);				ATTENTION FAIRE AVEC ET SANS \n.
-		line[depth] = buf[0];
-		return ();
+		recurse(line, depth + 1, fd);
 	}
-	-----------------
-*/
+	else
+	{
+		*line = malloc(depth + 1);		//		ATTENTION FAIRE AVEC ET SANS \n.
+		if (!*line)
+			return ;
+		buf[0] = 0;
+	}
+	(*line)[depth] = buf[0];
+}
+
+
 
 char	*get_next_line(char **line)
 {
-	int fd;
+	int		fd;
+	size_t	depth;
 
-	fd = open(0, O_RDNLY)
-	recurse(depth, fd);
+	depth = 0;
+	fd = open("/dev/urandom", O_RDONLY);
+	recurse(line, depth, fd);
+	return (*line);
 }
 
 int main(void)
 {
-	
+	char *line;
+
+	line = get_next_line(&line);
+	printf("%s\n", line);
+	free(line);
 }
